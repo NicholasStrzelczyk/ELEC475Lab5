@@ -48,10 +48,16 @@ class NosesDataset(Dataset):
         scale_percent_x = float(self.img_resize[0] / image.shape[1])
         scale_percent_y = float(self.img_resize[0] / image.shape[0])
 
+        # convert labels to match resized image
         new_point_x = float(point[0] * scale_percent_x)
         new_point_y = float(point[1] * scale_percent_y)
-        new_point = (new_point_x, new_point_y)
 
+        # normalize point coordinates between 0 and 1
+        new_point_x = float(new_point_x / self.img_resize[0])
+        new_point_y = float(new_point_y / self.img_resize[0])
+
+        # create and return new objects
+        new_point = (new_point_x, new_point_y)
         image_new = cv2.resize(image, self.img_resize)
 
         # cv2.circle(image, point, 5, (0, 0, 255), -1)

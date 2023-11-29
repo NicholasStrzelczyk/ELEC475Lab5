@@ -1,0 +1,1 @@
+python3 test.py -images_dir ./../data/Pet_noses/images/ -labels_dir ./ -weight_file ./weights.pth -b 100 -cuda y

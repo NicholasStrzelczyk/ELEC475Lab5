@@ -8,7 +8,6 @@ import torchvision.transforms as transforms
 from torch import nn
 from torch.utils.data import DataLoader
 from torchsummary import torchsummary
-
 from noses_dataset import NosesDataset
 from regression_model import RegressionModel
 
@@ -16,7 +15,6 @@ from regression_model import RegressionModel
 def data_transform():
     transform_list = [
         transforms.RandomAutocontrast(0.3),
-        # transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ]
     return transforms.Compose(transform_list)
@@ -57,7 +55,7 @@ if __name__ == '__main__':
     valid_set_length = len(valid_set)
 
     # # ----- initialize model and training parameters ----- #
-    model = RegressionModel()
+    model = RegressionModel(image_resize[0])
     print('model loaded OK!')
 
     print("CudaIsAvailable: {}, UseCuda: {}".format(torch.cuda.is_available(), use_cuda))
