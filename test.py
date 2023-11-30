@@ -1,20 +1,30 @@
 import argparse
-from matplotlib import pyplot as plt
-import time
+import math
 from datetime import datetime
 from pathlib import Path
 import torch
-import torchvision.transforms as transforms
-from torch import nn
 from torch.utils.data import DataLoader
 from torchsummary import torchsummary
-
 from noses_dataset import NosesDataset
 from regression_model import RegressionModel
+from resnet_pet_noses import ResNet_Pet_Noses
+
+
+def calc_euclidean_distance(labels, predictions, image_size):
+    if len(labels) != len(predictions):
+        raise ValueError("Arrays must be same length")
+    labels = labels * image_size
+    predictions = predictions * image_size
+    distances = []
+    for pt1, pt2 in zip(labels, predictions):
+        distance = math.sqrt(sum((x-y)**2 for x, y in zip(pt1, pt2)))
+        distances.append(distance)
+    return distances
+
 
 if __name__ == '__main__':
 
-    image_resize = (128, 128)
+    image_resize = 224
     device = torch.device('cpu')
 
     # ----- set up argument parser for command line inputs ----- #
@@ -38,7 +48,8 @@ if __name__ == '__main__':
     test_set_length = len(test_set)
 
     # # ----- initialize model and training parameters ----- #
-    model = RegressionModel(image_resize[0])
+    model = ResNet_Pet_Noses()
+    model.load_state_dict(torch.load(weight_file))
     print('model loaded OK!')
 
     print("CudaIsAvailable: {}, UseCuda: {}".format(torch.cuda.is_available(), use_cuda))
@@ -53,26 +64,18 @@ if __name__ == '__main__':
 
     # ----- begin training the model ----- #
     model.eval()
-    torchsummary.summary(model, input_size=(3, 128, 128))
-    print("{} training...".format(datetime.now()))
+    torchsummary.summary(model, input_size=(3, image_resize, image_resize))
+    print("{} testing...".format(datetime.now()))
 
     # ----- Validation ----- #
     with torch.no_grad():
-        predicted = []
+        distances = []
 
         for images, labels in test_loader:
             images = images.to(device=device)
             labels = labels.to(device=device)
-            outputs = model(images) * 128
-
-            for x, y in outputs:
-                predicted.append((x.item(), y.item()))
-            print(predicted)
-            quit()
-
+            outputs = model(images)
+            distances += calc_euclidean_distance(labels, outputs, image_resize)
             del images, labels, outputs
 
-    # print("{} Epoch {}, train loss {:.7f}, valid loss {:.7f}".format(
-    #     datetime.now(), epoch + 1,
-    #                     epoch_loss_train / train_set_length,
-    #                     epoch_loss_valid / test_set_length))
+    print("Mean Euclidean Distance: {}".format(torch.mean(torch.tensor(distances))))

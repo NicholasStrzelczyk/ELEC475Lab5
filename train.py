@@ -1,4 +1,7 @@
 import argparse
+import math
+
+import cv2
 from matplotlib import pyplot as plt
 import time
 from datetime import datetime
@@ -10,6 +13,19 @@ from torch.utils.data import DataLoader
 from torchsummary import torchsummary
 from noses_dataset import NosesDataset
 from regression_model import RegressionModel
+from resnet_pet_noses import ResNet_Pet_Noses
+
+
+def calc_euclidean_distance(labels, predictions, image_size):
+    if len(labels) != len(predictions):
+        raise ValueError("Arrays must be same length")
+    labels = labels * image_size
+    predictions = predictions * image_size
+    distances = []
+    for pt1, pt2 in zip(labels, predictions):
+        distance = math.sqrt(sum((x-y)**2 for x, y in zip(pt1, pt2)))
+        distances.append(distance)
+    return distances
 
 
 def data_transform():
@@ -22,7 +38,7 @@ def data_transform():
 
 if __name__ == '__main__':
 
-    image_resize = (128, 128)
+    image_resize = 224
     device = torch.device('cpu')
 
     # ----- set up argument parser for command line inputs ----- #
@@ -55,7 +71,7 @@ if __name__ == '__main__':
     valid_set_length = len(valid_set)
 
     # # ----- initialize model and training parameters ----- #
-    model = RegressionModel(image_resize[0])
+    model = ResNet_Pet_Noses()
     print('model loaded OK!')
 
     print("CudaIsAvailable: {}, UseCuda: {}".format(torch.cuda.is_available(), use_cuda))
@@ -68,14 +84,14 @@ if __name__ == '__main__':
 
     model.to(device=device)
     loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learn, weight_decay=5e-5)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=5, verbose=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learn)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, total_iters=n_epochs, end_factor=0.5, verbose=True)
 
     # ----- begin training the model ----- #
     model.train()
     loss_train = []
     loss_valid = []
-    torchsummary.summary(model, input_size=(3, 128, 128))
+    torchsummary.summary(model, input_size=(3, image_resize, image_resize))
     print("{} training...".format(datetime.now()))
     start_time = time.time()
 
@@ -93,25 +109,28 @@ if __name__ == '__main__':
             optimizer.step()
             epoch_loss_train += loss.item()
 
-        scheduler.step(epoch_loss_train)
+        scheduler.step()
         loss_train.append(epoch_loss_train / train_set_length)
 
         # ----- Validation ----- #
         with torch.no_grad():
+            distances = []
             for images, labels in valid_loader:
                 images = images.to(device=device)
                 labels = labels.to(device=device)
                 outputs = model(images)
+                distances += calc_euclidean_distance(labels, outputs, image_resize)
                 loss = loss_fn(outputs, labels)
                 epoch_loss_valid += loss.item()
                 del images, labels, outputs
 
         loss_valid.append(epoch_loss_valid / valid_set_length)
 
-        print("{} Epoch {}, train loss {:.7f}, valid loss {:.7f}".format(
+        print("{} Epoch {}, train loss {:.7f}, valid loss {:.7f}, valid mean eucl dist: {:.5f}".format(
             datetime.now(), epoch + 1,
             epoch_loss_train / train_set_length,
-            epoch_loss_valid / valid_set_length))
+            epoch_loss_valid / valid_set_length,
+            torch.mean(torch.tensor(distances))))
 
     end_time = time.time()
 
@@ -120,6 +139,31 @@ if __name__ == '__main__':
     minutes, seconds = divmod(rem, 60)
     total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
     print("Total training time: {}, ".format(total_time))
+    transform = transforms.ToPILImage()
+
+    with torch.no_grad():
+        distances = []
+
+        for images, labels in valid_loader:
+            images = images.to(device=device)
+            labels = labels.to(device=device)
+            outputs = model(images)
+            distances += calc_euclidean_distance(labels, outputs, image_resize[0])
+            del images, labels, outputs
+
+    # for idx in range(5):
+    #     image = valid_set[idx][0]
+    #     print(type(image))
+    #     print(type(image.numpy()))
+    #     image = image.permute(1, 2, 0).numpy()
+    #     gt_point = ground_truths[idx]
+    #     pred_point = predictions[idx]
+    #     cv2.circle(image, gt_point, 5, (0, 0, 255), -1)
+    #     cv2.circle(image, pred_point, 5, (0, 255, 0), -1)
+    #     cv2.imshow('new image', image)
+    #     cv2.waitKey(0)
+
+    print("Mean Euclidean Distance: {}".format(torch.mean(torch.tensor(distances))))
 
     # save the model weights
     torch.save(model.state_dict(), weight_file)
