@@ -4,8 +4,8 @@ epochs 20
 batch size 150
 
 Total training time: 00:14:47.76,
-Final training loss value: 0.0000214023
-Final validation loss value: 0.0000214023
+Final training loss value: 0.0000214
+Final validation loss value: 0.0000508
 
 total test time 00:00:02.97, 4.253 msec per image
 

@@ -137,8 +137,8 @@ if __name__ == '__main__':
     minutes, seconds = divmod(rem, 60)
     total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
     print("Total training time: {}, ".format(total_time))
-    print("Final training loss value: {:.10f}".format(loss_train[-1]))
-    print("Final validation loss value: {:.10f}".format(loss_train[-1]))
+    print("Final training loss value: {:.7f}".format(loss_train[-1]))
+    print("Final validation loss value: {:.7f}".format(loss_valid[-1]))
     print("Validation mean euclidean distance for latest epoch: {:.4f}".format(torch.mean(torch.tensor(distances))))
 
     # save the model weights
