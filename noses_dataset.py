@@ -34,7 +34,8 @@ class NosesDataset(Dataset):
         label = self.labels[idx]
         image = cv2.imread(self.images[idx], cv2.IMREAD_COLOR)
         if image is None:
-            print(self.images[idx])
+            print("incorrect image format for file: {}".format(self.images[idx]))
+            print("quitting program...")
             quit()
         image, label = self.resize_data(image, label)
         label = torch.tensor(label)

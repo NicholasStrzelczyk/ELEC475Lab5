@@ -1,10 +1,17 @@
------ weights_final.pth -----
+----- weights_final3.pth -----
 learn rate 5e-5
 epochs 20
-batch size 100
-train time 00:15:19.16
+batch size 150
 
-Mean Euclidean Distance: 20.179311752319336
-Minimum Euclidean Distance: 0.2540680468082428
-Maximum Euclidean Distance: 95.80830383300781
-Std Deviation of Euclidean Distance: 13.667588233947754
+Total training time: 00:14:47.76,
+Final training loss value: 0.0000214023
+Final validation loss value: 0.0000214023
+
+Mean Accuracy: 91.37%
+Mean Euclidean Distance: 22.0848
+Maximum Euclidean Distance: 107.5340
+Minimum Euclidean Distance: 0.8790
+Std Deviation of Euclidean Distance: 14.8634
+
+
+

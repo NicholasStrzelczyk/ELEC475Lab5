@@ -18,6 +18,7 @@ def calc_euclidean_distance(labels, predictions, image_size):
         raise ValueError("Arrays must be same length")
     labels = labels * image_size
     predictions = predictions * image_size
+    predictions = torch.round(predictions)
     distances = []
     for pt1, pt2 in zip(labels, predictions):
         distance = math.sqrt(sum((x-y)**2 for x, y in zip(pt1, pt2)))
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('-labels_dir', type=str, help='directory for labels')
     parser.add_argument('-weight_file', type=str, help='file name for saved model')
     parser.add_argument('-plot_file', type=str, help='file name for saved plot')
-    parser.add_argument('-learn', type=float, default=0.01, help='Learning rate')
+    parser.add_argument('-learn', type=float, default=5e-5, help='Learning rate')
     parser.add_argument('-e', type=int, default=20, help='Number of epochs')
     parser.add_argument('-b', type=int, default=20, help='Batch size')
     parser.add_argument('-cuda', type=str, default='n', help='[y/N]')
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     learn = float(args.learn)
     n_epochs = int(args.e)
     batch_size = int(args.b)
-    use_cuda = str(args.cuda).lower()
+    use_cuda = str(args.cuda).lower() == 'y'
     weight_file = Path(args.weight_file)
     plot_file = Path(args.plot_file)
     images_dir = Path(args.images_dir)
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     print('model loaded OK!')
 
     print("CudaIsAvailable: {}, UseCuda: {}".format(torch.cuda.is_available(), use_cuda))
-    if torch.cuda.is_available() and use_cuda == 'y':
+    if torch.cuda.is_available() and use_cuda:
         print('using cuda ...')
         model.cuda()
         device = torch.device('cuda')
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     model.to(device=device)
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learn)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, total_iters=n_epochs, end_factor=0.5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, total_iters=n_epochs, end_factor=0.3, verbose=True)
 
     # ----- begin training the model ----- #
     model.train()
@@ -136,7 +137,9 @@ if __name__ == '__main__':
     minutes, seconds = divmod(rem, 60)
     total_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
     print("Total training time: {}, ".format(total_time))
-    print("Validation Mean Euclidean Distance: {}".format(torch.mean(torch.tensor(distances))))
+    print("Final training loss value: {:.10f}".format(loss_train[-1]))
+    print("Final validation loss value: {:.10f}".format(loss_train[-1]))
+    print("Validation mean euclidean distance for latest epoch: {:.4f}".format(torch.mean(torch.tensor(distances))))
 
     # save the model weights
     torch.save(model.state_dict(), weight_file)
