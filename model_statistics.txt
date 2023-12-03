@@ -7,6 +7,8 @@ Total training time: 00:14:47.76,
 Final training loss value: 0.0000214023
 Final validation loss value: 0.0000214023
 
+total test time 00:00:02.97, 4.253 msec per image
+
 Mean Accuracy: 91.37%
 Mean Euclidean Distance: 22.0848
 Maximum Euclidean Distance: 107.5340
