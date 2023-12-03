@@ -1,12 +1,13 @@
 import argparse
 import math
+import random
 from datetime import datetime
 from pathlib import Path
+import cv2
 import torch
 from torch.utils.data import DataLoader
 from torchsummary import torchsummary
 from noses_dataset import NosesDataset
-from regression_model import RegressionModel
 from resnet_pet_noses import ResNet_Pet_Noses
 
 
@@ -24,7 +25,7 @@ def calc_euclidean_distance(labels, predictions, image_size):
 
 if __name__ == '__main__':
 
-    image_resize = 224
+    image_resize = 256
     device = torch.device('cpu')
 
     # ----- set up argument parser for command line inputs ----- #
@@ -49,7 +50,7 @@ if __name__ == '__main__':
 
     # # ----- initialize model and training parameters ----- #
     model = ResNet_Pet_Noses()
-    model.load_state_dict(torch.load(weight_file))
+    model.load_state_dict(torch.load(weight_file, map_location=device))
     print('model loaded OK!')
 
     print("CudaIsAvailable: {}, UseCuda: {}".format(torch.cuda.is_available(), use_cuda))
@@ -67,15 +68,35 @@ if __name__ == '__main__':
     torchsummary.summary(model, input_size=(3, image_resize, image_resize))
     print("{} testing...".format(datetime.now()))
 
-    # ----- Validation ----- #
+    # ----- Testing ----- #
     with torch.no_grad():
         distances = []
+        gt_and_pred_noses = [((0, 0), (0, 0))] * test_set_length
 
-        for images, labels in test_loader:
+        for indexes, images, labels in test_loader:
             images = images.to(device=device)
             labels = labels.to(device=device)
             outputs = model(images)
             distances += calc_euclidean_distance(labels, outputs, image_resize)
+
+            for i in range(len(images)):
+                gt = (int(image_resize * (labels[i][0].item())), int(image_resize * (labels[i][1].item())))
+                pred = (int(image_resize * (outputs[i][0].item())), int(image_resize * (outputs[i][1].item())))
+                idx = int(indexes[i].item())
+                gt_and_pred_noses[idx] = (gt, pred)
+
             del images, labels, outputs
 
     print("Mean Euclidean Distance: {}".format(torch.mean(torch.tensor(distances))))
+    print("Minimum Euclidean Distance: {}".format(torch.min(torch.tensor(distances))))
+    print("Maximum Euclidean Distance: {}".format(torch.max(torch.tensor(distances))))
+    print("Std Deviation of Euclidean Distance: {}".format(torch.std(torch.tensor(distances))))
+
+    # print 10 random sample images
+    for k in range(10):
+        idx = random.randint(0, test_set_length-1)
+        gt = gt_and_pred_noses[idx][0]
+        pred = gt_and_pred_noses[idx][1]
+        image_with_noses = test_set.get_img_with_noses(idx, gt, pred)
+        cv2.imshow("Ground Truth: green, Predicted: pink", image_with_noses)
+        cv2.waitKey(0)

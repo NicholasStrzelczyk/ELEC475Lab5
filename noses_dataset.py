@@ -42,7 +42,7 @@ class NosesDataset(Dataset):
         image = image.permute(2, 0, 1)
         if self.transform is not None:
             image = self.transform(image)
-        return image, label
+        return idx, image, label
 
     def resize_data(self, image, point):
         scale_percent_x = float(self.img_resize / image.shape[1])
@@ -69,3 +69,11 @@ class NosesDataset(Dataset):
         # cv2.waitKey(0)
 
         return image_new, new_point
+
+    def get_img_with_noses(self, idx, gt, pred=None):
+        image = cv2.imread(self.images[idx], cv2.IMREAD_COLOR)
+        image = cv2.resize(image, (self.img_resize, self.img_resize))
+        cv2.circle(image, gt, 5, (0, 255, 0), -1)
+        if pred is not None:
+            cv2.circle(image, pred, 5, (255, 0, 255), -1)
+        return image

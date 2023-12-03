@@ -1,1 +1,1 @@
-python3 test.py -images_dir ./../data/Pet_noses/images/ -labels_dir ./ -weight_file ./weights_new.pth -b 256 -cuda y
+python3 test.py -images_dir ./../data/Pet_noses/images/ -labels_dir ./ -weight_file ./weights_final.pth -b 100 -cuda y

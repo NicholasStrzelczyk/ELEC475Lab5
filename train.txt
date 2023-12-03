@@ -1,1 +1,1 @@
-python3 train.py -images_dir ./../data/Pet_noses/images -labels_dir ./ -weight_file ./weights_new_224.pth -plot_file ./loss_plot_new_224.png -learn 5e-5 -e 20 -b 256 -cuda y
+python3 train.py -images_dir ./../data/Pet_noses/images -labels_dir ./ -weight_file ./weights_final.pth -plot_file ./loss_plot_final.png -learn 5e-5 -e 20 -b 100 -cuda y
