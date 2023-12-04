@@ -141,3 +141,8 @@ if __name__ == '__main__':
             image_with_noses = test_set.get_img_with_noses(idx, gt, pred)
             cv2.imshow("Ground Truth: green, Predicted: pink", image_with_noses)
             cv2.waitKey(0)
+
+    cat_mean_distance, dog_mean_distance = test_set.calc_distances_per_pet(distances)
+
+    print("The mean distance for cat noses was: {:.4f}".format(cat_mean_distance))
+    print("The mean distance for dog noses was: {:.4f}".format(dog_mean_distance))

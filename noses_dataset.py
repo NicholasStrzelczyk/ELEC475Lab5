@@ -2,6 +2,7 @@ import os
 import cv2
 import torch
 from torch.utils.data import Dataset
+from statistics import mean
 
 
 class NosesDataset(Dataset):
@@ -16,6 +17,7 @@ class NosesDataset(Dataset):
         self.images_dir = images_dir
         self.labels = []
         self.images = []
+        self.filenames = []
 
         # save file and label references
         labels_file = os.path.join(labels_dir, self.mode+'_noses.txt')
@@ -26,6 +28,7 @@ class NosesDataset(Dataset):
             split = line.split(',')
             self.labels.append((float(split[1]), float(split[2])))
             self.images.append(os.path.join(images_dir, split[0]))
+            self.filenames.append(split[0])
 
     def __len__(self):
         return len(self.images)
@@ -78,3 +81,14 @@ class NosesDataset(Dataset):
         if pred is not None:
             cv2.circle(image, pred, 5, (255, 0, 255), -1)
         return image
+
+
+    def calc_distances_per_pet(self, distances):
+        cat_distances = []
+        dog_distances = []
+        for i in range(len(distances)):
+            if self.filenames[i].split('_')[0][0].isupper():
+                cat_distances.append(distances[i])
+            else:
+                dog_distances.append(distances[i])
+        return mean(cat_distances), mean(dog_distances)
